@@ -19,15 +19,16 @@
     "moduleResolution": "node",
     "esModuleInterop": true,
     "allowJs": true
+    ,
+    "typeRoots": [
+      "./node_modules/@types"
+    ],
+    "types": ["node", "jest"]
   },
   "include": ["src/**/*", "prisma/**/*"],
   "exclude": [
     "node_modules",
     "dist",
-    "client",
-    "src/App.tsx",
-    "src/main.tsx", 
-    "src/index.css",
-    "*.tsx"
+    "client"
   ]
 }

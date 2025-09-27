@@ -1,8 +1,6 @@
-import { Controller, Get, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { Controller, Get, Param, ParseIntPipe } from '@nestjs/common';
 import { SuppliersService } from './suppliers.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-
-@UseGuards(JwtAuthGuard)
+// Auth supprimée
 @Controller('suppliers')
 export class SuppliersController {
   constructor(private readonly suppliersService: SuppliersService) {}

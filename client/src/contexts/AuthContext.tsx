@@ -1,11 +1,17 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
-import { authService } from '../services/authService';
+// Déclaration minimale pour que TypeScript reconnaisse import.meta.env personnalisé sans ajouter @types/node
+interface ViteEnvMeta { VITE_BYPASS_AUTH?: string; }
+declare global {
+  interface ImportMeta { env: ViteEnvMeta; }
+}
+// Auth supprimée : plus d'appels réseau d'authentification
 
 interface User {
   id: number;
   email: string;
   name: string;
   role: string;
+  bypassAuth?: boolean; // flag interne pour distinguer le mode bypass
 }
 
 interface AuthContextType {
@@ -30,37 +36,21 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // tenter de réhydrater depuis localStorage
-    try {
-      const rawUser = localStorage.getItem('auth_user');
-      const token = localStorage.getItem('auth_token');
-      if (rawUser && token) {
-        setUser(JSON.parse(rawUser));
-      }
-    } catch (e) {
-      // ignore
-    } finally {
-      setLoading(false);
-    }
+    // Auth toujours désactivée : on injecte un user mock immédiat
+    const mockUser: User = {
+      id: 1,
+      email: 'dev@local',
+      name: 'Dev Admin',
+      role: 'ADMIN',
+      bypassAuth: true,
+    };
+    setUser(mockUser);
+    setLoading(false);
   }, []);
 
-  const login = async (email: string, password: string) => {
-    const data = await authService.login(email, password);
-    if (data && data.access_token) {
-      try {
-        localStorage.setItem('auth_token', data.access_token);
-        localStorage.setItem('auth_user', JSON.stringify(data.user));
-      } catch (e) {}
-      setUser(data.user);
-    } else {
-      throw new Error('Invalid login response');
-    }
-  };
+  const login = async () => { /* noop */ };
 
-  const logout = () => {
-    authService.logout();
-    setUser(null);
-  };
+  const logout = () => { /* noop */ };
 
   const value = {
     user,

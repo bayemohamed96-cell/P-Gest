@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { apiService } from '../services/apiService';
-import { Users, Plus, Eye, CreditCard as Edit, FileText } from 'lucide-react';
+import { Users, Plus, CreditCard as Edit, FileText } from 'lucide-react';
 
 const CustomersPage: React.FC = () => {
   const [customers, setCustomers] = useState([]);

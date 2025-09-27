@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { apiService, formatCFA, formatDate } from '../services/apiService';
-import { Package, Plus, Eye, CreditCard as Edit, Lock, Clock as Unlock } from 'lucide-react';
+import { apiService, formatDate } from '../services/apiService';
+import { Package, Plus, CreditCard as Edit, Lock, Clock as Unlock } from 'lucide-react';
 
 const LotsPage: React.FC = () => {
   const [lots, setLots] = useState([]);
@@ -14,9 +14,12 @@ const LotsPage: React.FC = () => {
         const data = await apiService.getLots();
         console.log('📦 Lots reçus:', data);
         setLots(data);
-      } catch (error) {
+      } catch (error: unknown) {
         console.error('❌ Erreur lors du chargement des lots:', error);
-        console.error('Détails de l\'erreur:', error.response?.data || error.message);
+        if (typeof error === 'object' && error !== null) {
+          const anyErr = error as any;
+          console.error('Détails de l\'erreur:', anyErr.response?.data || anyErr.message);
+        }
       } finally {
         setLoading(false);
       }

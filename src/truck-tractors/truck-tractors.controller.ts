@@ -1,8 +1,6 @@
-import { Controller, Get, UseGuards } from '@nestjs/common';
+import { Controller, Get } from '@nestjs/common';
 import { TruckTractorsService } from './truck-tractors.service';
-import { JwtAuthGuard } from '../auth/jwt-auth.guard';
-
-@UseGuards(JwtAuthGuard)
+// Auth supprimée
 @Controller('truck-tractors')
 export class TruckTractorsController {
   constructor(private readonly truckTractorsService: TruckTractorsService) {}

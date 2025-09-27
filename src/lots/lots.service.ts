@@ -77,30 +77,27 @@ export class LotsService {
     });
   }
 
-  async update(id: number, updateLotDto: UpdateLotDto) {
-    const { trips, ...lotData } = updateLotDto;
-
-    // Use a transaction to update the lot and replace trips atomically
-    const ops: any[] = [];
-
-    ops.push(this.prisma.lot.update({
+  async updateMeta(id: number, updateLotDto: UpdateLotDto) {
+    await this.prisma.lot.update({
       where: { id },
       data: {
-        ...lotData,
-        product: lotData.product ? (lotData.product as Product) : undefined,
-        startedAt: lotData.startedAt ? new Date(lotData.startedAt) : undefined,
+        lotCode: updateLotDto.lotCode,
+        product: updateLotDto.product ? (updateLotDto.product as Product) : undefined,
+        startedAt: updateLotDto.startedAt ? new Date(updateLotDto.startedAt) : undefined,
+        notes: updateLotDto.notes,
       },
-    }));
+    });
+    return this.findOne(id);
+  }
 
-    if (trips) {
-      // Delete existing trips for the lot
-      ops.push(this.prisma.lotTrip.deleteMany({ where: { lotId: id } }));
-
-      // Create new trips if provided
-      if (trips.length > 0) {
-        ops.push(this.prisma.lotTrip.createMany({
-          data: trips.map((trip: any) => ({
-            lotId: id,
+  async replaceTrips(id: number, trips: any[]) {
+    // transaction: delete then createMany
+    const ops: any[] = [];
+    ops.push(this.prisma.lotTrip.deleteMany({ where: { lotId: id } }));
+    if (trips && trips.length) {
+      ops.push(this.prisma.lotTrip.createMany({
+        data: trips.map((trip: any) => ({
+          lotId: id,
             cisternId: trip.cisternId,
             tractorId: trip.tractorId,
             driverId: trip.driverId,
@@ -114,14 +111,10 @@ export class LotsService {
             transitCfa: trip.transitCfa,
             customsCfa: trip.customsCfa,
             miscCfa: trip.miscCfa || 0,
-          })),
-        }));
-      }
+        })),
+      }));
     }
-
-    // Execute all operations in a transaction
     await this.prisma.$transaction(ops);
-
     return this.findOne(id);
   }
 
@@ -185,8 +178,75 @@ export class LotsService {
 
     return {
       trips,
-      calculations,
       totals: Object.assign({}, totals_snake, totals_camel),
+      calculations, // deprecated
+      meta: {
+        deprecated: ['calculations','totals.totalRevenue','totals.totalCost','totals.totalMargin'],
+        generatedAt: new Date().toISOString(),
+        lotId: id,
+      },
     } as any;
+  }
+
+  /**
+   * Import XLSX file, parse trips and insert/update lot_trips for the given lot id.
+   * Expects a Multer file object. Returns a summary { imported, errors }
+   */
+  async importXlsx(id: number, file: any) {
+    if (!file || !file.buffer) {
+      throw new NotFoundException('Fichier manquant');
+    }
+
+    const XLSX = await import('xlsx');
+    const workbook = XLSX.read(file.buffer, { type: 'buffer' });
+    const sheet = workbook.Sheets[workbook.SheetNames[0]];
+  const raw = XLSX.utils.sheet_to_json(sheet, { defval: '' });
+
+    const parseRow = (r: any) => {
+      const get = (k: string) => {
+        const key = Object.keys(r).find((kk) => kk.toLowerCase() === k.toLowerCase());
+        return key ? r[key] : '';
+      };
+
+      return {
+        capacityL: Number(get('Capacity_L')) || 0,
+        priceBuyPerL: Number(get('PriceBuy_L')) || 0,
+        freightPerL: Number(get('Freight_L')) || 0,
+        toleranceL: Number(get('Tolerance')) || 0,
+        shortageL: Number(get('Shortage')) || 0,
+        priceSellPerL: Number(get('PriceSell_L')) || 0,
+        transitCfa: Number(get('Transit_CFA')) || 0,
+        customsCfa: Number(get('Customs_CFA')) || 0,
+        miscCfa: Number(get('Misc_CFA')) || 0,
+      };
+    };
+
+  const rows = raw.map((r: any) => parseRow(r));
+
+    // Insert all trips in a transaction
+    const ops: any[] = [];
+    // Delete existing trips for the lot
+    ops.push(this.prisma.lotTrip.deleteMany({ where: { lotId: id } }));
+
+    if (rows.length > 0) {
+      ops.push(this.prisma.lotTrip.createMany({
+        data: rows.map((r: any) => ({
+          lotId: id,
+          capacityL: r.capacityL,
+          priceBuyPerL: r.priceBuyPerL,
+          freightPerL: r.freightPerL,
+          toleranceL: r.toleranceL,
+          shortageL: r.shortageL,
+          priceSellPerL: r.priceSellPerL,
+          transitCfa: r.transitCfa,
+          customsCfa: r.customsCfa,
+          miscCfa: r.miscCfa,
+        })),
+      }));
+    }
+
+    await this.prisma.$transaction(ops);
+
+    return { imported: rows.length, errors: [] };
   }
 }

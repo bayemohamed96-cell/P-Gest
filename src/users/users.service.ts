@@ -27,6 +27,11 @@ export class UsersService {
     return this.prisma.user.findUnique({ where: { id } });
   }
 
+  async findAllWithRefresh() {
+    // Cast temporaire en attendant la régénération du client Prisma incluant refreshTokenHash
+    return this.prisma.user.findMany({ where: ({ refreshTokenHash: { not: null } } as any) });
+  }
+
   // Store hashed refresh token for a user
   async setRefreshTokenHash(userId: number, hash: string) {
     // cast data to any to avoid TypeScript errors until prisma client is regenerated after schema changes

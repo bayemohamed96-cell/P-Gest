@@ -1,4 +1,4 @@
-import { IsString, IsOptional, IsArray, IsDateString } from 'class-validator';
+import { IsString, IsOptional, IsDateString } from 'class-validator';
 
 export class CreateLotDto {
   @IsString()
@@ -32,7 +32,4 @@ export class UpdateLotDto {
   @IsString()
   notes?: string;
 
-  @IsOptional()
-  @IsArray()
-  trips?: any[];
 }

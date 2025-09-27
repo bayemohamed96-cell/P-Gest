@@ -1,50 +1,17 @@
 import axios from 'axios';
-import { authService } from './authService';
 
-const API_URL = 'http://localhost:3000/api';
+// Préférence: appels relatifs /api -> gérés par proxy Vite (vite.config) en dev,
+// et par reverse proxy / same-origin en prod. Variable VITE_API_BASE reste possible.
+const API_URL = (import.meta as any).env?.VITE_API_BASE || '/api';
 
-// Token management helper (reads from localStorage)
-function getAuthToken(): string | null {
-  try {
-    return localStorage.getItem('auth_token');
-  } catch (e) {
-    return null;
-  }
-}
-
-// Request interceptor: add Authorization header when token exists
-axios.interceptors.request.use((config) => {
-  const token = getAuthToken();
-  if (token && config.headers) {
-    config.headers['Authorization'] = `Bearer ${token}`;
-  }
-  return config;
-});
-
-// Response interceptor: handle 401 centrally (could redirect to login)
-axios.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    const originalRequest = error.config;
-    if (error.response && error.response.status === 401 && !originalRequest._retry) {
-      originalRequest._retry = true;
-      // try refresh
-      return authService.refresh()
-        .then(() => {
-          // retry original request with new access token
-          originalRequest.headers['Authorization'] = `Bearer ${localStorage.getItem('auth_token')}`;
-          return axios(originalRequest);
-        })
-        .catch(() => {
-          try { localStorage.removeItem('auth_token'); localStorage.removeItem('auth_refresh'); localStorage.removeItem('auth_user'); } catch (e) {}
-          return Promise.reject(error);
-        });
-    }
-    return Promise.reject(error);
-  }
-);
+// Auth supprimée : plus d'intercepteurs Authorization / refresh
 
 export const apiService = {
+  // Status / Dashboard
+  async getStatusSummary() {
+    const response = await axios.get(`${API_URL}/status/summary`);
+    return response.data;
+  },
   // Lots
   async getLots() {
     const response = await axios.get(`${API_URL}/lots`);
@@ -63,6 +30,11 @@ export const apiService = {
 
   async updateLot(id: number, data: any) {
     const response = await axios.patch(`${API_URL}/lots/${id}`, data);
+    return response.data;
+  },
+
+  async replaceLotTrips(id: number, trips: any[]) {
+    const response = await axios.patch(`${API_URL}/lots/${id}/trips`, { trips });
     return response.data;
   },
 

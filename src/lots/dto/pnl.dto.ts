@@ -13,19 +13,21 @@ export class TripPnlDto {
 
 export class LotsPnlResponseDto {
   trips: TripPnlDto[];
-  // legacy/compat shape used by older tests/consumers
-  calculations?: TripPnlDto[];
-
   totals: {
-    // snake_case (new API)
     capacity_l: number;
     qty_sellable: number;
     revenue: number;
     total_cost: number;
     margin: number;
-    // camelCase compatibility
-    totalRevenue?: number;
-    totalCost?: number;
-    totalMargin?: number;
+    totalRevenue?: number; // deprecated
+    totalCost?: number;    // deprecated
+    totalMargin?: number;  // deprecated
   };
+  meta?: {
+    deprecated?: string[]; // liste des champs à ne plus consommer
+    generatedAt: string;
+    lotId: number;
+  };
+  // Conservé encore un court temps pour compatibilité; sera retiré plus tard.
+  calculations?: TripPnlDto[]; // deprecated
 }

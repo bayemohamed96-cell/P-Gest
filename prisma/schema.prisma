@@ -137,11 +137,16 @@ model PurchaseOrder {
   customsCfa    Int       @map("customs_cfa")
   status        POStatus  @default(DRAFT)
   orderedAt     DateTime? @map("ordered_at")
+  bankAccountId Int?     @map("bank_account_id")
   
   supplier      Supplier  @relation(fields: [supplierId], references: [id])
   receipts      PurchaseReceipt[]
+  bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id])
 
   @@map("purchase_orders")
+  @@index([supplierId])
+  @@index([bankAccountId])
+  @@index([status])
 }
 
 model PurchaseReceipt {
@@ -154,6 +159,7 @@ model PurchaseReceipt {
   purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id])
 
   @@map("purchase_receipts")
+  @@index([poId])
 }
 
 model Lot {
@@ -168,6 +174,8 @@ model Lot {
   invoices  Invoice[]
 
   @@map("lots")
+  @@index([product])
+  @@index([startedAt])
 }
 
 model LotTrip {
@@ -196,6 +204,11 @@ model LotTrip {
   invoiceLines   InvoiceLine[]
 
   @@map("lot_trips")
+  @@index([lotId])
+  @@index([driverId])
+  @@index([destinationId])
+  @@index([cisternId])
+  @@index([tractorId])
 }
 
 model Invoice {
@@ -212,6 +225,9 @@ model Invoice {
   lines     InvoiceLine[]
 
   @@map("invoices")
+  @@index([lotId])
+  @@index([customerId])
+  @@index([status])
 }
 
 model InvoiceLine {
@@ -226,6 +242,8 @@ model InvoiceLine {
   lotTrip       LotTrip? @relation(fields: [lotTripId], references: [id])
 
   @@map("invoice_lines")
+  @@index([invoiceId])
+  @@index([lotTripId])
 }
 
 model PaymentIn {
@@ -235,10 +253,15 @@ model PaymentIn {
   reference  String
   amountCfa  Int      @map("amount_cfa")
   note       String?
-  
+  bankAccountId Int?   @map("bank_account_id")
+
   customer   Customer @relation(fields: [customerId], references: [id])
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id])
 
   @@map("payments_in")
+  @@index([customerId])
+  @@index([date])
+  @@index([bankAccountId])
 }
 
 model PaymentOut {
@@ -248,10 +271,15 @@ model PaymentOut {
   reference  String
   amountCfa  Int      @map("amount_cfa")
   note       String?
-  
+  bankAccountId Int?   @map("bank_account_id")
+
   supplier   Supplier @relation(fields: [supplierId], references: [id])
+  bankAccount BankAccount? @relation(fields: [bankAccountId], references: [id])
 
   @@map("payments_out")
+  @@index([supplierId])
+  @@index([date])
+  @@index([bankAccountId])
 }
 
 model PricingRule {
@@ -264,6 +292,7 @@ model PricingRule {
   destination   Destination @relation(fields: [destinationId], references: [id])
 
   @@map("pricing_rules")
+  @@index([destinationId, product, validFrom])
 }
 
 model TransportRule {
@@ -275,6 +304,7 @@ model TransportRule {
   destination   Destination @relation(fields: [destinationId], references: [id])
 
   @@map("transport_rules")
+  @@index([destinationId, validFrom])
 }
 
 model Backup {
@@ -286,4 +316,66 @@ model Backup {
   ok        Boolean
 
   @@map("backups")
+}
+
+model Bank {
+  id        Int           @id @default(autoincrement())
+  name      String
+  code      String?       @unique
+  swift     String?
+  country   String?
+
+  accounts  BankAccount[]
+
+  @@map("banks")
+}
+
+model BankAccount {
+  id           Int      @id @default(autoincrement())
+  bankId       Int      @map("bank_id")
+  accountNo    String   @map("account_no")
+  name         String?
+  currency     String   @default("XOF")
+  active       Boolean  @default(true)
+
+  bank         Bank     @relation(fields: [bankId], references: [id])
+  paymentsIn   PaymentIn[]
+  paymentsOut  PaymentOut[]
+  purchaseOrders PurchaseOrder[]
+  expenses     Expense[]
+  loans        Loan[]
+
+  @@unique([bankId, accountNo])
+  @@map("bank_accounts")
+  @@index([bankId])
+  @@index([active])
+}
+
+model Expense {
+  id            Int      @id @default(autoincrement())
+  date          DateTime
+  amountCfa     Int      @map("amount_cfa")
+  description   String?
+  bankAccountId Int?     @map("bank_account_id")
+
+  bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id])
+
+  @@map("expenses")
+  @@index([bankAccountId])
+  @@index([date])
+}
+
+model Loan {
+  id            Int      @id @default(autoincrement())
+  lender        String
+  amountCfa     Int      @map("amount_cfa")
+  takenAt       DateTime @map("taken_at")
+  dueAt         DateTime? @map("due_at")
+  bankAccountId Int?     @map("bank_account_id")
+
+  bankAccount   BankAccount? @relation(fields: [bankAccountId], references: [id])
+
+  @@map("loans")
+  @@index([bankAccountId])
+  @@index([dueAt])
 }

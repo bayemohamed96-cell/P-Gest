@@ -105,10 +105,10 @@ const LotEditorPage: React.FC = () => {
       const data = await file.arrayBuffer();
       const workbook = XLSX.read(data, { type: 'array' });
       const sheet = workbook.Sheets[workbook.SheetNames[0]];
-      const raw = XLSX.utils.sheet_to_json<any>(sheet, { defval: '' });
+  const raw = XLSX.utils.sheet_to_json(sheet, { defval: '' }) as any[];
 
       // Map expected columns (case-insensitive)
-      const mapRow = (r: any, rowIndex: number) => {
+  const mapRow = (r: any) => {
         const get = (k: string) => {
           const key = Object.keys(r).find((kk) => kk.toLowerCase() === k.toLowerCase());
           return key ? r[key] : '';
@@ -128,7 +128,7 @@ const LotEditorPage: React.FC = () => {
         return parsed;
       };
 
-      const parsedRows: TripRow[] = raw.map((r: any, i: number) => mapRow(r, i));
+  const parsedRows: TripRow[] = raw.map((r: any) => mapRow(r));
       setPreview(parsedRows);
     } catch (e: any) {
       setImportErrors([String(e?.message || e)]);

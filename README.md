@@ -48,13 +48,13 @@ Créez un fichier `.env` à la racine (copiez `.env.example`) et ajustez :
 ```
 DATABASE_URL="file:./prisma/dev.db" # local (sqlite) — en production utilisez Postgres
 PORT=3000
-JWT_SECRET=change-me-32chars-min
 CORS_ORIGIN=http://localhost:5173,https://TON-DOMAINE.vercel.app
 ```
 
 Notes :
 - `DATABASE_URL` en production devrait pointer vers une base Postgres (ex: `postgresql://USER:PASS@HOST:5432/DB`).
 - `CORS_ORIGIN` peut contenir plusieurs origines séparées par des virgules.
+- Authentification SUPPRIMÉE : aucun secret JWT n'est requis actuellement.
 
 ## Variables d'environnement (frontend)
 
@@ -90,12 +90,12 @@ npx prisma migrate deploy
 ## 🚀 Fonctionnalités Principales
 
 ### Backend (NestJS + Prisma)
-- **Authentification JWT** avec RBAC (Admin, Manager, Operator)
-- **API REST complète** pour toutes les entités métier
+- **Authentification supprimée** pour accélérer le développement (toutes les routes sont publiques)
+- **API REST complète** pour les entités métier
 - **Calculs P&L automatiques** pour les lots de transport
 - **Gestion des reliquats** fournisseurs
 - **Relevés clients** avec soldes courants
-- **Service de sauvegarde** Google Drive (stub)
+- **Service de sauvegarde** Google Drive (stub / à implémenter)
 
 ### Frontend (React + TypeScript)
 - **Interface d'administration** moderne et responsive
@@ -190,11 +190,17 @@ npm run client:build
 npm run start:prod
 ```
 
-## 👤 Comptes de Démonstration
+## 👤 Comptes / Accès
 
-- **Admin** : admin@example.com / password
-- **Manager** : manager@example.com / password
-- **Operator** : operator@example.com / password
+L'authentification a été entièrement SUPPRIMÉE (code effacé). Aucune connexion ni token.
+
+Pour réintroduire une sécurité minimale :
+1. Recréer un module `auth` (controllers + service) avec endpoint `POST /auth/login`.
+2. Réinstaller dépendances : `@nestjs/jwt @nestjs/passport passport passport-jwt bcryptjs`.
+3. Implémenter une stratégie JWT + guard appliqué aux contrôleurs sensibles.
+4. Restaurer un `AuthContext` côté frontend, gestion des tokens (Authorization: Bearer).
+5. Ajouter un middleware/guard pour restreindre l'écriture (POST/PUT/DELETE) si besoin rôle.
+6. Mettre à jour README pour lister de nouveau les variables (`JWT_SECRET`).
 
 ## 📱 Utilisation
 
@@ -228,33 +234,33 @@ npm run test:e2e
 npm run test:cov
 ```
 
-## 📦 Structure du Projet
+## 📦 Structure du Projet (simplifiée)
 
 ```
-petroleum-erp/
-├── src/                    # Backend NestJS
-│   ├── auth/              # Authentification JWT
-│   ├── lots/              # Gestion des lots
-│   ├── customers/         # Gestion clients
-│   ├── suppliers/         # Gestion fournisseurs
-│   ├── services/          # Services métier
-│   └── ...
-├── client/                # Frontend React
-│   ├── src/
-│   │   ├── components/    # Composants réutilisables
-│   │   ├── pages/         # Pages de l'application
-│   │   ├── services/      # Services API
-│   │   └── contexts/      # Contextes React
-│   └── ...
-├── prisma/                # Schéma et migrations
-└── README.md
+project/
+├── src/                    # Backend NestJS (sans auth)
+│   ├── lots/
+│   ├── customers/
+│   ├── suppliers/
+│   ├── destinations/
+│   ├── drivers/
+│   ├── truck-cisterns/
+│   ├── truck-tractors/
+│   ├── payments/
+│   └── prisma/
+├── client/                 # Frontend React
+│   └── src/
+│       ├── components/
+│       ├── pages/
+│       ├── services/
+│       └── contexts/
+└── prisma/                 # Schéma et migrations
 ```
 
 ## 🔧 API Endpoints
 
-### Authentification
-- `POST /auth/login` - Connexion
-- `POST /auth/register` - Inscription
+### (Authentification supprimée)
+Endpoints /auth retirés.
 
 ### Lots
 - `GET /lots` - Liste des lots
@@ -278,12 +284,15 @@ petroleum-erp/
 - **Destinations** : Ouagadougou, Bobo-Dioulasso, etc.
 - **Réglementation** : Transit, douanes, taxes locales
 
-## 🔒 Sécurité
+## 🔒 Sécurité (actuelle vs future)
 
-- **JWT** avec expiration configurable
-- **RBAC** : Admin, Manager, Operator
-- **Validation** des données d'entrée
-- **Hashage** des mots de passe (bcrypt)
+Actuel : AUCUNE protection (environnement de dev interne). Toutes les routes sont publiques.
+
+Pour une version sécurisée envisagée :
+- JWT avec expiration configurable
+- RBAC basique (admin / opérateur)
+- Validation d'entrée (déjà active via class-validator)
+- Hashage des mots de passe (bcrypt) quand réintroduit
 
 ## 📈 Évolutions Futures
 

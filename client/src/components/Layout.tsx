@@ -1,11 +1,7 @@
 import React from 'react';
-import { Link, useLocation } from 'react-router-dom';
+import { Link, useLocation, Outlet } from 'react-router-dom';
 
-interface LayoutProps {
-  children: React.ReactNode;
-}
-
-const Layout: React.FC<LayoutProps> = ({ children }) => {
+const Layout: React.FC = () => {
   const location = useLocation();
   console.log('📍 Current location:', location.pathname);
 
@@ -57,7 +53,7 @@ const Layout: React.FC<LayoutProps> = ({ children }) => {
       {/* Main content */}
       <div className="pl-64">
         <main className="py-8 px-8">
-          {children}
+          <Outlet />
         </main>
       </div>
     </div>
