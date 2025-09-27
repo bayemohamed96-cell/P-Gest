@@ -1,6 +1,91 @@
-# ERP Logistique Pétrolière - Afrique de l'Ouest
 
-Système ERP-lite spécialisé pour la logistique pétrolière en Afrique de l'Ouest, développé avec NestJS, Prisma, PostgreSQL et React.
+# P-Gest
+
+Guide rapide — setup local, variables d'environnement et déploiement
+
+## Setup local
+
+Pré-requis : Node.js LTS (18/20+), npm
+
+1. Installer les dépendances (racine et client)
+
+```powershell
+# à la racine du projet
+npm install
+
+# côté client
+cd client; npm install
+```
+
+2. Générer le client Prisma
+
+```powershell
+npx prisma generate
+```
+
+3. Appliquer les migrations et seed (SQLite local par défaut)
+
+```powershell
+npm run db:migrate
+npm run seed
+```
+
+4. Démarrer les environnements de développement
+
+```powershell
+# API (depuis la racine)
+npm run dev:api
+
+# Frontend (nouveau terminal)
+cd client
+npm run dev
+```
+
+## Variables d'environnement (backend)
+
+Créez un fichier `.env` à la racine (copiez `.env.example`) et ajustez :
+
+```
+DATABASE_URL="file:./prisma/dev.db" # local (sqlite) — en production utilisez Postgres
+PORT=3000
+JWT_SECRET=change-me-32chars-min
+CORS_ORIGIN=http://localhost:5173,https://TON-DOMAINE.vercel.app
+```
+
+Notes :
+- `DATABASE_URL` en production devrait pointer vers une base Postgres (ex: `postgresql://USER:PASS@HOST:5432/DB`).
+- `CORS_ORIGIN` peut contenir plusieurs origines séparées par des virgules.
+
+## Variables d'environnement (frontend)
+
+Créez `client/.env` (copiez `client/.env.example`) et ajustez :
+
+```
+VITE_API_URL=http://localhost:3000
+```
+
+## Déploiement
+
+- Frontend (Vercel)
+	- Importez le repo dans Vercel, pointez la racine du projet sur le dossier `client`.
+	- Build command : `npm run build`
+	- Output directory : `dist`
+	- Configurez la variable d'environnement `VITE_API_URL` vers l'URL de l'API en production.
+
+- API (Railway ou autre PaaS)
+	- Variables requises : `DATABASE_URL` (Postgres), `JWT_SECRET`, `CORS_ORIGIN`.
+	- Build & start (exemple) :
+
+```powershell
+npm install && npx prisma generate && npm run build
+npm run start:api
+# Pour déployer les migrations (Railway) :
+npx prisma migrate deploy
+```
+
+## Notes
+- N'oubliez pas de régénérer le client Prisma après toute modification du `schema.prisma` : `npx prisma generate`.
+- Le seed crée des données d'exemple (admin/password) pour développement local.
 
 ## 🚀 Fonctionnalités Principales
 

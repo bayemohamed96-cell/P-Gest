@@ -1,4 +1,4 @@
-# Déps & builds
+# Dï¿½ps & builds
 node_modules/
 client/node_modules/
 dist/
@@ -18,3 +18,19 @@ client/.env.local
 .DS_Store
 Thumbs.db
 .vscode/
+
+# Misc
+node_modules/
+client/node_modules/
+dist/
+client/dist/
+
+# Prisma
+prisma/dev.db
+prisma/dev.db-journal
+
+# Env
+.env
+client/.env
+.env.local
+client/.env.local

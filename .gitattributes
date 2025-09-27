@@ -16,3 +16,5 @@
 # Scripts Windows en CRLF
 *.bat text eol=crlf
 *.cmd text eol=crlf
+
+*.json text eol=lf

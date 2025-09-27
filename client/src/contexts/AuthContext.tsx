@@ -26,34 +26,40 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>({
-    id: 1,
-    email: 'admin@example.com',
-    name: 'Administrateur',
-    role: 'ADMIN'
-  });
+  const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulation d'un utilisateur connecté avec un délai
-    setTimeout(() => {
+    // tenter de réhydrater depuis localStorage
+    try {
+      const rawUser = localStorage.getItem('auth_user');
+      const token = localStorage.getItem('auth_token');
+      if (rawUser && token) {
+        setUser(JSON.parse(rawUser));
+      }
+    } catch (e) {
+      // ignore
+    } finally {
       setLoading(false);
-    }, 100);
+    }
   }, []);
 
   const login = async (email: string, password: string) => {
-    // Simulation de connexion réussie
-    const mockUser = {
-      id: 1,
-      email: email,
-      name: 'Administrateur',
-      role: 'ADMIN'
-    };
-    setUser(mockUser);
+    const data = await authService.login(email, password);
+    if (data && data.access_token) {
+      try {
+        localStorage.setItem('auth_token', data.access_token);
+        localStorage.setItem('auth_user', JSON.stringify(data.user));
+      } catch (e) {}
+      setUser(data.user);
+    } else {
+      throw new Error('Invalid login response');
+    }
   };
 
   const logout = () => {
-    // Ne fait rien pour le moment
+    authService.logout();
+    setUser(null);
   };
 
   const value = {

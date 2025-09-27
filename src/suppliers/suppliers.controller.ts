@@ -1,22 +1,24 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
-import { CustomersService } from './customers.service';
+import { Controller, Get, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
+import { SuppliersService } from './suppliers.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
-@Controller('customers')
-export class CustomersController {
-  constructor(private readonly customersService: CustomersService) {}
+@UseGuards(JwtAuthGuard)
+@Controller('suppliers')
+export class SuppliersController {
+  constructor(private readonly suppliersService: SuppliersService) {}
 
   @Get()
   findAll() {
-    return this.customersService.findAll();
+    return this.suppliersService.findAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.customersService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.suppliersService.findOne(id);
   }
 
   @Get(':id/statement')
-  getStatement(@Param('id') id: string) {
-    return this.customersService.getStatement(+id);
+  getStatement(@Param('id', ParseIntPipe) id: number) {
+    return this.suppliersService.getStatement(id);
   }
 }

@@ -1,18 +1,45 @@
 import axios from 'axios';
+import { authService } from './authService';
 
 const API_URL = 'http://localhost:3000/api';
 
-// Intercepteur pour ajouter le token d'authentification
+// Token management helper (reads from localStorage)
+function getAuthToken(): string | null {
+  try {
+    return localStorage.getItem('auth_token');
+  } catch (e) {
+    return null;
+  }
+}
+
+// Request interceptor: add Authorization header when token exists
 axios.interceptors.request.use((config) => {
-  // Pas de token pour le moment
+  const token = getAuthToken();
+  if (token && config.headers) {
+    config.headers['Authorization'] = `Bearer ${token}`;
+  }
   return config;
 });
 
-// Intercepteur pour gérer les erreurs d'authentification
+// Response interceptor: handle 401 centrally (could redirect to login)
 axios.interceptors.response.use(
   (response) => response,
   (error) => {
-    // Pas de gestion d'erreur auth pour le moment
+    const originalRequest = error.config;
+    if (error.response && error.response.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      // try refresh
+      return authService.refresh()
+        .then(() => {
+          // retry original request with new access token
+          originalRequest.headers['Authorization'] = `Bearer ${localStorage.getItem('auth_token')}`;
+          return axios(originalRequest);
+        })
+        .catch(() => {
+          try { localStorage.removeItem('auth_token'); localStorage.removeItem('auth_refresh'); localStorage.removeItem('auth_user'); } catch (e) {}
+          return Promise.reject(error);
+        });
+    }
     return Promise.reject(error);
   }
 );

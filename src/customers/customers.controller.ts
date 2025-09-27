@@ -1,6 +1,8 @@
-import { Controller, Get, Param, UseGuards } from '@nestjs/common';
+import { Controller, Get, Param, UseGuards, ParseIntPipe } from '@nestjs/common';
 import { CustomersService } from './customers.service';
+import { JwtAuthGuard } from '../auth/jwt-auth.guard';
 
+@UseGuards(JwtAuthGuard)
 @Controller('customers')
 export class CustomersController {
   constructor(private readonly customersService: CustomersService) {}
@@ -11,12 +13,12 @@ export class CustomersController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.customersService.findOne(+id);
+  findOne(@Param('id', ParseIntPipe) id: number) {
+    return this.customersService.findOne(id);
   }
 
   @Get(':id/statement')
-  getStatement(@Param('id') id: string) {
-    return this.customersService.getStatement(+id);
+  getStatement(@Param('id', ParseIntPipe) id: number) {
+    return this.customersService.getStatement(id);
   }
 }

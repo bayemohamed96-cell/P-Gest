@@ -1,14 +1,25 @@
 import 'reflect-metadata';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
+import { GlobalExceptionFilter } from './common/filters/http-exception.filter';
 import { AppModule } from './app.module';
+
+// Parse CORS origins from environment variable CORS_ORIGIN (comma separated)
+function getCorsOrigins(): string[] {
+  const raw = process.env.CORS_ORIGIN || '';
+  return raw
+    .split(',')
+    .map(s => s.trim())
+    .filter(Boolean);
+}
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
   
-  // Configuration CORS
+  // Configuration CORS dynamiquement depuis CORS_ORIGIN
+  const origins = getCorsOrigins();
   app.enableCors({
-    origin: ['http://localhost:5173', 'http://localhost:3001'],
+    origin: origins.length ? origins : ['http://localhost:5173'],
     credentials: true,
   });
   
@@ -21,6 +32,9 @@ async function bootstrap() {
     forbidNonWhitelisted: true,
     transform: true,
   }));
+
+  // Global exception filter
+  app.useGlobalFilters(new GlobalExceptionFilter());
   
   const port = process.env.PORT || 3000;
   await app.listen(port);
