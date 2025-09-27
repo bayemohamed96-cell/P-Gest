@@ -1,0 +1,288 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id       Int    @id @default(autoincrement())
+  email    String @unique
+  password String
+  role     Role   @default(OPERATOR)
+  name     String
+  active   Boolean @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  MANAGER
+  OPERATOR
+}
+
+enum Product {
+  GASOIL
+}
+
+enum POStatus {
+  DRAFT
+  ORDERED
+  RECEIVED
+  CLOSED
+}
+
+enum TripStatus {
+  PLANNED
+  DELIVERED
+  INVOICED
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  PAID
+  PARTIAL
+  OVERDUE
+}
+
+model TruckCistern {
+  id              Int    @id @default(autoincrement())
+  plate           String @unique
+  capacityL       Int    @map("capacity_l")
+  calibrationDoc  String @map("calibration_doc")
+  active          Boolean @default(true)
+  
+  lotTrips        LotTrip[]
+
+  @@map("truck_cisterns")
+}
+
+model TruckTractor {
+  id       Int     @id @default(autoincrement())
+  plate    String  @unique
+  active   Boolean @default(true)
+  
+  lotTrips LotTrip[]
+
+  @@map("truck_tractors")
+}
+
+model Driver {
+  id        Int    @id @default(autoincrement())
+  name      String
+  phone     String
+  licenseId String @map("license_id")
+  
+  lotTrips  LotTrip[]
+
+  @@map("drivers")
+}
+
+model Destination {
+  id                 Int    @id @default(autoincrement())
+  name               String
+  routeCode          String @map("route_code")
+  defaultToleranceL  Int    @map("default_tolerance_l")
+  
+  lotTrips           LotTrip[]
+  pricingRules       PricingRule[]
+  transportRules     TransportRule[]
+
+  @@map("destinations")
+}
+
+model Supplier {
+  id             Int    @id @default(autoincrement())
+  name           String
+  nif            String
+  phone          String
+  
+  purchaseOrders PurchaseOrder[]
+  paymentsOut    PaymentOut[]
+
+  @@map("suppliers")
+}
+
+model Customer {
+  id           Int    @id @default(autoincrement())
+  name         String
+  nif          String
+  phone        String
+  paymentTerms String @map("payment_terms")
+  
+  invoices     Invoice[]
+  paymentsIn   PaymentIn[]
+
+  @@map("customers")
+}
+
+model PurchaseOrder {
+  id            Int       @id @default(autoincrement())
+  supplierId    Int       @map("supplier_id")
+  cmdNo         String    @map("cmd_no")
+  product       Product
+  qtyOrderedL   Int       @map("qty_ordered_l")
+  priceBuyPerL  Int       @map("price_buy_per_l")
+  transitCfa    Int       @map("transit_cfa")
+  customsCfa    Int       @map("customs_cfa")
+  status        POStatus  @default(DRAFT)
+  orderedAt     DateTime? @map("ordered_at")
+  
+  supplier      Supplier  @relation(fields: [supplierId], references: [id])
+  receipts      PurchaseReceipt[]
+
+  @@map("purchase_orders")
+}
+
+model PurchaseReceipt {
+  id           Int      @id @default(autoincrement())
+  poId         Int      @map("po_id")
+  qtyReceivedL Int      @map("qty_received_l")
+  receivedAt   DateTime @map("received_at")
+  note         String?
+  
+  purchaseOrder PurchaseOrder @relation(fields: [poId], references: [id])
+
+  @@map("purchase_receipts")
+}
+
+model Lot {
+  id        Int       @id @default(autoincrement())
+  lotCode   String    @unique @map("lot_code")
+  product   Product
+  startedAt DateTime  @map("started_at")
+  closedAt  DateTime? @map("closed_at")
+  notes     String?
+  
+  trips     LotTrip[]
+  invoices  Invoice[]
+
+  @@map("lots")
+}
+
+model LotTrip {
+  id             Int        @id @default(autoincrement())
+  lotId          Int        @map("lot_id")
+  cisternId      Int        @map("cistern_id")
+  tractorId      Int        @map("tractor_id")
+  driverId       Int        @map("driver_id")
+  destinationId  Int        @map("destination_id")
+  capacityL      Int        @map("capacity_l")
+  priceBuyPerL   Int        @map("price_buy_per_l")
+  freightPerL    Int        @map("freight_per_l")
+  toleranceL     Int        @map("tolerance_l")
+  shortageL      Int        @map("shortage_l") @default(0)
+  priceSellPerL  Int        @map("price_sell_per_l")
+  transitCfa     Int        @map("transit_cfa")
+  customsCfa     Int        @map("customs_cfa")
+  miscCfa        Int?       @map("misc_cfa")
+  status         TripStatus @default(PLANNED)
+  
+  lot            Lot         @relation(fields: [lotId], references: [id])
+  cistern        TruckCistern @relation(fields: [cisternId], references: [id])
+  tractor        TruckTractor @relation(fields: [tractorId], references: [id])
+  driver         Driver      @relation(fields: [driverId], references: [id])
+  destination    Destination @relation(fields: [destinationId], references: [id])
+  invoiceLines   InvoiceLine[]
+
+  @@map("lot_trips")
+}
+
+model Invoice {
+  id        Int           @id @default(autoincrement())
+  lotId     Int           @map("lot_id")
+  customerId Int          @map("customer_id")
+  invoiceNo String        @unique @map("invoice_no")
+  totalCfa  Int           @map("total_cfa")
+  issuedAt  DateTime      @map("issued_at")
+  status    InvoiceStatus @default(DRAFT)
+  
+  lot       Lot           @relation(fields: [lotId], references: [id])
+  customer  Customer      @relation(fields: [customerId], references: [id])
+  lines     InvoiceLine[]
+
+  @@map("invoices")
+}
+
+model InvoiceLine {
+  id            Int      @id @default(autoincrement())
+  invoiceId     Int      @map("invoice_id")
+  lotTripId     Int?     @map("lot_trip_id")
+  qtyL          Int      @map("qty_l")
+  unitPriceCfa  Int      @map("unit_price_cfa")
+  lineTotalCfa  Int      @map("line_total_cfa")
+  
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id])
+  lotTrip       LotTrip? @relation(fields: [lotTripId], references: [id])
+
+  @@map("invoice_lines")
+}
+
+model PaymentIn {
+  id         Int      @id @default(autoincrement())
+  customerId Int      @map("customer_id")
+  date       DateTime
+  reference  String
+  amountCfa  Int      @map("amount_cfa")
+  note       String?
+  
+  customer   Customer @relation(fields: [customerId], references: [id])
+
+  @@map("payments_in")
+}
+
+model PaymentOut {
+  id         Int      @id @default(autoincrement())
+  supplierId Int      @map("supplier_id")
+  date       DateTime
+  reference  String
+  amountCfa  Int      @map("amount_cfa")
+  note       String?
+  
+  supplier   Supplier @relation(fields: [supplierId], references: [id])
+
+  @@map("payments_out")
+}
+
+model PricingRule {
+  id            Int         @id @default(autoincrement())
+  product       Product
+  destinationId Int         @map("destination_id")
+  validFrom     DateTime    @map("valid_from")
+  priceSellPerL Int         @map("price_sell_per_l")
+  
+  destination   Destination @relation(fields: [destinationId], references: [id])
+
+  @@map("pricing_rules")
+}
+
+model TransportRule {
+  id            Int         @id @default(autoincrement())
+  destinationId Int         @map("destination_id")
+  validFrom     DateTime    @map("valid_from")
+  freightPerL   Int         @map("freight_per_l")
+  
+  destination   Destination @relation(fields: [destinationId], references: [id])
+
+  @@map("transport_rules")
+}
+
+model Backup {
+  id        Int      @id @default(autoincrement())
+  ranAt     DateTime @map("ran_at")
+  sizeBytes Int      @map("size_bytes")
+  checksum  String
+  location  String
+  ok        Boolean
+
+  @@map("backups")
+}

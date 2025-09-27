@@ -1,0 +1,54 @@
+{
+  "name": "my-app",
+  "private": true,
+  "version": "0.0.0",
+  "scripts": {
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "dev": "cd client && npm run dev",
+    "client:build": "cd client && npm run build",
+    "setup": "npm install && cd client && npm install && cd .. && npx prisma generate && npx prisma migrate dev --name init && npm run seed",
+    "build:backend": "tsc -p tsconfig.json",
+    "start": "npm run build:backend && node dist/main.js",
+    "start:dev": "npx tsx src/main.ts",
+    "backend:start": "npx tsx src/main.ts",
+    "backend:dev": "nodemon --exec ts-node src/main.ts",
+    "seed": "npx tsx prisma/seed.ts",
+    "seed:compile": "if not exist dist\\prisma mkdir dist\\prisma && npx tsc prisma/seed.ts --outDir dist --target es2020 --module commonjs --esModuleInterop --skipLibCheck && node dist/prisma/seed.js"
+  },
+  "jest": {
+    "moduleFileExtensions": [
+      "js",
+      "json",
+      "ts"
+    ],
+    "rootDir": "src",
+    "testRegex": ".*\\.spec\\.ts$",
+    "transform": {
+      "^.+\\.(t|j)s$": "ts-jest"
+    },
+    "collectCoverageFrom": [
+      "**/*.(t|j)s"
+    ],
+    "coverageDirectory": "../coverage",
+    "testEnvironment": "node"
+  },
+  "dependencies": {
+    "@nestjs/common": "^11.1.6",
+    "@nestjs/core": "^11.1.6",
+    "@nestjs/jwt": "^11.0.0",
+    "@nestjs/passport": "^11.0.5",
+    "@nestjs/platform-express": "^11.1.6",
+    "bcryptjs": "^3.0.2",
+    "passport": "^0.7.0",
+    "passport-jwt": "^4.0.1",
+    "reflect-metadata": "^0.2.2",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/bcryptjs": "^2.4.6",
+    "@types/passport-jwt": "^4.0.1",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2"
+  }
+}
